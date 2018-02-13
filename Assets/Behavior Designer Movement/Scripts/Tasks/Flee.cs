@@ -31,17 +31,17 @@ namespace BehaviorDesigner.Runtime.Tasks.Movement
         public override TaskStatus OnUpdate()
         {
             if (Vector3.Magnitude(transform.position - target.Value.transform.position) > fleedDistance.Value) {
-				Debug.Log("1");
+				//Debug.Log("1");
                 return TaskStatus.Success;
             }
 
             if (HasArrived()) {
                 if (!hasMoved) {
-					Debug.Log("2");
+					//Debug.Log("2");
 					return TaskStatus.Failure;
                 }
                 if (!SetDestination(Target())) {
-					Debug.Log("3");
+					//Debug.Log("3");
 					return TaskStatus.Failure;
                 }
                 hasMoved = false;
@@ -49,7 +49,7 @@ namespace BehaviorDesigner.Runtime.Tasks.Movement
                 // If the agent is stuck the task shouldn't continue to return a status of running.
                 var velocityMagnitude = Velocity().sqrMagnitude;
                 if (hasMoved && velocityMagnitude <= 0f) {
-					Debug.Log("4");
+					//Debug.Log("4");
 					return TaskStatus.Failure;
                 }
                 hasMoved = velocityMagnitude > 0f;

@@ -6,16 +6,15 @@ using UnityEngine;
 using UnityEngine.AI;
 
 public class CharacterAnimator : MonoBehaviour {
-
-	//link to Animator component
+	
 	private Animator animController;
-	//used to set anim controller parameters
 	public enum MoveState { Idle, Walking, Running, Sprinting }
 	public MoveState moveState;
-	//link to NavMeshAgent component
 	private NavMeshAgent navAgent;
 	private float currentSpeed;
 	private BehaviorTree behaviorTree;
+	private SharedGameObject seenObject;
+	private SharedBool targetFound;
 
 	private void Awake()
 	{
@@ -26,20 +25,20 @@ public class CharacterAnimator : MonoBehaviour {
 	private void Start()
 	{
 		currentSpeed = animController.GetFloat("Speed");
+		seenObject = (SharedGameObject)behaviorTree.GetVariable("SeenObject");
+		targetFound = (SharedBool)behaviorTree.GetVariable("TargetFound");
 	}
 
 	void Update()
 	{
-		//print(behaviorTree.FindTaskWithName("Can See Object").OnUpdate());
-		var seenObject = (SharedGameObject)behaviorTree.GetVariable("SeenObject");
 		var sqrDist = Vector3.SqrMagnitude(navAgent.destination - transform.position);
 		animController.speed = navAgent.speed;
-		//character walks if there is a navigation path set, idle all other times
-		if (navAgent.hasPath && seenObject.Value != null && sqrDist > Mathf.Pow(navAgent.stoppingDistance * 8f, 2f))
+		// Character moves if there is a navigation path set, idle all other times
+		if (navAgent.hasPath && targetFound.Value && sqrDist > Mathf.Pow(navAgent.stoppingDistance * 8f, 2f))
 		{
 			moveState = MoveState.Sprinting;
 		}
-		else if (navAgent.hasPath && seenObject.Value != null && sqrDist > Mathf.Pow(navAgent.stoppingDistance * 5f, 2f))
+		else if (navAgent.hasPath && targetFound.Value && sqrDist > Mathf.Pow(navAgent.stoppingDistance, 2f))
 		{
 			moveState = MoveState.Running;
 		}
@@ -51,7 +50,8 @@ public class CharacterAnimator : MonoBehaviour {
 		{
 			moveState = MoveState.Idle;
 		}
-		//send move state info to animator controller
+		Debug.DrawLine(transform.position, navAgent.destination, Color.red, 0.01f);
+		// Send move state info to animator controller
 		currentSpeed = Mathf.Lerp(currentSpeed, (float)moveState, navAgent.acceleration * Time.deltaTime);
 		animController.SetFloat("Speed", currentSpeed);
 		
@@ -59,12 +59,12 @@ public class CharacterAnimator : MonoBehaviour {
 
 	void OnAnimatorMove()
 	{
-		//only perform if walking
+		// Only perform if not idling
 		if (moveState != MoveState.Idle)
 		{
-			//set the navAgent's velocity to the velocity of the animation clip currently playing
+			// Set the navAgent's velocity to the velocity of the animation clip currently playing
 			navAgent.velocity = animController.deltaPosition / Time.deltaTime;
-			//set the rotation in the direction of movement
+			// Set the rotation in the direction of movement
 			Quaternion lookRotation = Quaternion.LookRotation(navAgent.desiredVelocity);
 			transform.rotation = Quaternion.RotateTowards(transform.rotation, lookRotation, navAgent.angularSpeed * Time.deltaTime);
 		}
